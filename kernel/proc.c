@@ -310,6 +310,9 @@ fork(void)
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
+  // inheritate mask for tracing syscalls
+  np->mask = p->mask;
+
   pid = np->pid;
 
   release(&np->lock);
@@ -414,7 +417,7 @@ wait(uint64 addr)
             release(&wait_lock);
             return -1;
           }
-          freeproc(pp);
+          freeproc(pp);   
           release(&pp->lock);
           release(&wait_lock);
           return pid;

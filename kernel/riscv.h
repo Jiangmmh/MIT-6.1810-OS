@@ -204,7 +204,11 @@ r_menvcfg()
 static inline void 
 w_menvcfg(uint64 x)
 {
+<<<<<<< HEAD
   //asm volatile("csrw menvcfg, %0" : : "r" (x));
+=======
+  // asm volatile("csrw menvcfg, %0" : : "r" (x));
+>>>>>>> syscall
   asm volatile("csrw 0x30a, %0" : : "r" (x));
 }
 

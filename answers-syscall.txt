@@ -1,0 +1,33 @@
+1. Looking at the backtrace output, which function called syscall?
+在gdb中输入bt，查看调用栈：
+(gdb) bt
+#0  syscall () at kernel/syscall.c:133
+#1  0x0000000080001a2e in usertrap () at kernel/trap.c:67
+#2  0x0000000000000000 in ?? ()
+Backtrace stopped: frame did not save the PC
+我们可以看到是kernel/trap.c中的usertrap()在第67行调用了syscall()
+
+2. What is the value of p->trapframe->a7 and what does that value represent?
+根据proc.h中struct proc的内容，a7应该保存在其中的trapframe中，在gdb中输入： p /x *(p->trapframe)
+$4 = {kernel_satp = 0x8000000000087fff, kernel_sp = 0x3fffffe000, kernel_trap = 0x800019b8, epc = 0x18, kernel_hartid = 0x1, ra = 0x0, sp = 0x1000, gp = 0x0, tp = 0x0, t0 = 0x0, 
+  t1 = 0x0, t2 = 0x0, s0 = 0x0, s1 = 0x0, a0 = 0x24, a1 = 0x2b, a2 = 0x0, a3 = 0x0, a4 = 0x0, a5 = 0x0, a6 = 0x0, a7 = 0x7, s2 = 0x0, s3 = 0x0, s4 = 0x0, s5 = 0x0, s6 = 0x0, s7 = 0x0, 
+  s8 = 0x0, s9 = 0x0, s10 = 0x0, s11 = 0x0, t3 = 0x0, t4 = 0x0, t5 = 0x0, t6 = 0x0}
+可以看到a7的值为0x7，这个值表示系统调用函数sys_exec在syscalls数组中的索引。
+
+3. What was the previous mode that the CPU was in?
+在gdb中输入p /x $sstatus，获取Supervisor Status寄存器的值为0x200000022，查看riscv-privileged手册，发现：
+The SPP bit indicates the privilege level at which a hart was executing before entering supervisor mode. 
+When a trap is taken, SPP is set to 0 if the trap originated from user mode, or 1 otherwise.
+即其中有一位SSP，该位为0表示本次trap来自于用户态，为1则为内核态。SSP在SStatus寄存器的第8位上，检查发现该位为0，即CPU之前处于用户态。
+
+4. Write down the assembly instruction the kernel is panicing at. Which register corresponds to the variable num?
+80001c82:	00002683          	lw	a3,0(zero) # 0 <_entry-0x80000000>
+错误指令为lw a3,0(zero)，可以看到变量num放在a3中。
+
+5. Why does the kernel crash? Hint: look at figure 3-3 in the text; is address 0 mapped in the kernel address space? 
+   Is that confirmed by the value in scause above? 
+   内核crash的原因是访问虚拟地址0处的内容，而根据xv6 book中图3-3的描述，虚拟地址0处不属于内核空间，没有对应的物理地址映射。
+   根据scause的内容为0xd，查找riscv手册，0xd表示Load page fault，证实了我们的猜想。
+
+6. What is the name of the process that was running when the kernel paniced? What is its process id (pid)?
+直接用p命令打印name和pid即可，进程名为initcode，pid为1。

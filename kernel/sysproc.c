@@ -42,7 +42,7 @@ sys_sbrk(void)
   int n;
 
   argint(0, &n);
-  addr = myproc()->sz;
+  addr = myproc()->sz;  // 进程占用的字节数
   if(growproc(n) < 0)
     return -1;
   return addr;
@@ -90,4 +90,16 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+
+uint64
+sys_trace(void) 
+{
+  int mask;
+  argint(0, &mask);   // 获取参数
+  struct proc* p =  myproc();
+  p->mask = mask;    // 将mask保存在PCB中
+
+  return 0;
 }
