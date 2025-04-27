@@ -438,13 +438,13 @@ sys_exec(void)
   int i;
   uint64 uargv, uarg;
 
-  argaddr(1, &uargv);
+  argaddr(1, &uargv);   // 获取exec的参数argv数组的地址
   if(argstr(0, path, MAXPATH) < 0) {
     return -1;
   }
   memset(argv, 0, sizeof(argv));
   for(i=0;; i++){
-    if(i >= NELEM(argv)){
+    if(i >= NELEM(argv)){ 
       goto bad;
     }
     if(fetchaddr(uargv+sizeof(uint64)*i, (uint64*)&uarg) < 0){
@@ -454,7 +454,7 @@ sys_exec(void)
       argv[i] = 0;
       break;
     }
-    argv[i] = kalloc();
+    argv[i] = kalloc();   // 为参数分配一个物理页
     if(argv[i] == 0)
       goto bad;
     if(fetchstr(uarg, argv[i], PGSIZE) < 0)

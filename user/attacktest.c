@@ -62,13 +62,13 @@ main(int argc, char *argv[])
   // an insecure way of generating a random string, because xv6
   // doesn't have good source of randomness.
   rand_next = uptime();
-  randstring(secret, 8);
+  randstring(secret, 8);  // 随机生成取自"./abcdef"的8个字符存入secret
   
   if((pid = fork()) < 0) {
     printf("fork failed\n");
     exit(1);   
   }
-  if(pid == 0) {
+  if(pid == 0) {  // 子进程执行secret，刚刚生成的secret为参数
     char *newargv[] = { "secret", secret, 0 };
     exec(newargv[0], newargv);
     printf("exec %s failed\n", newargv[0]);
@@ -83,10 +83,10 @@ main(int argc, char *argv[])
       printf("fork failed\n");
       exit(1);   
     }
-    if(pid == 0) {
+    if(pid == 0) {    // 子进程执行attack
       close(fds[0]);
-      close(2);
-      dup(fds[1]);
+      close(2); 
+      dup(fds[1]);    // 将子进程的fd=2指向管道入端  
       char *newargv[] = { "attack", 0 };
       exec(newargv[0], newargv);
       printf("exec %s failed\n", newargv[0]);
@@ -97,7 +97,7 @@ main(int argc, char *argv[])
         printf("FAIL; read failed; no secret\n");
         exit(1);
       }
-      if(strcmp(secret, output) == 0) {
+      if(strcmp(secret, output) == 0) { // 比较attack写入管道的内容和secret
         printf("OK: secret is %s\n", output);
       } else {
         printf("FAIL: no/incorrect secret\n");

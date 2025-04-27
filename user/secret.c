@@ -11,9 +11,9 @@ main(int argc, char *argv[])
     printf("Usage: secret the-secret\n");
     exit(1);
   }
-  char *end = sbrk(PGSIZE*32);
-  end = end + 9 * PGSIZE;
-  strcpy(end, "my very very very secret pw is:   ");
+  char *end = sbrk(PGSIZE*32);    // 申请32个页
+  end = end + 9 * PGSIZE;         
+  strcpy(end, "my very very very secret pw is:   "); 
   strcpy(end+32, argv[1]);
   exit(0);
 }
