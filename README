@@ -1,3 +1,18 @@
+Starting Time: 2025/4/25
+
+Finishing Time: 
+
+- Lecture 1: Course intro, Explained some syscalls in xv6(including open, read, write, fork, exec) --2025/4/25
+- Lecture 2：OS abstract thr HW resources, strong isolation between OS & APP supported by HW, user mode/kernel mode, trust computing base(kernel must have no bug & kernel must treat process as malicious), dig into xv6 source code --2025/4/26
+
+
+- Lab1 utils(6 hours): setup lab environment, install some tools, implement user programs using lib functions --2025/4/26
+
+Debug tips:
+- first terminal: make GPUS=1 qemu-gdb // 令调试时线程数为1
+- second terminal: gdb-multiarch
+
+
 xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
 Version 6 (v6).  xv6 loosely follows the structure and style of v6,
 but is implemented for a modern RISC-V multiprocessor using ANSI C.
