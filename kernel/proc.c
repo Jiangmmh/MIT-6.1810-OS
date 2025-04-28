@@ -38,7 +38,7 @@ proc_mapstacks(pagetable_t kpgtbl)
     char *pa = kalloc();  //  为每个cpu分配一页作为用户栈
     if(pa == 0)
       panic("kalloc");
-    uint64 va = KSTACK((int) (p - proc)); // 向低地址移动2个页面，其中一个作为栈，另一个作为守护页面
+    uint64 va = KSTACK((int) (p - proc)); // 向低地址移动2个页面，其中一个作为栈，另一个作为未分配的守护页面
     kvmmap(kpgtbl, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);  // 为内核栈建立映射
   }
 }
@@ -126,7 +126,7 @@ found:
   p->state = USED;
 
   // Allocate a trapframe page.
-  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+  if((p->trapframe = (struct trapframe *)kalloc()) == 0){   // 为trapframe分配物理内存，并保存在struct proc中
     freeproc(p);
     release(&p->lock);
     return 0;

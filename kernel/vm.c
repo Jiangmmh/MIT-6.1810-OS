@@ -103,7 +103,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   for(int level = 2; level > 0; level--) {
     pte_t *pte = &pagetable[PX(level, va)];
     if(*pte & PTE_V) {  // 检查PTE的Valid位，表示pte存在
-      pagetable = (pagetable_t)PTE2PA(*pte);
+      pagetable = (pagetable_t)PTE2PA(*pte);  // 更新pagetable指向的页表
 #ifdef LAB_PGTBL
       if(PTE_LEAF(*pte)) {
         return pte;
@@ -134,9 +134,9 @@ walkaddr(pagetable_t pagetable, uint64 va)
   pte = walk(pagetable, va, 0);
   if(pte == 0)
     return 0;
-  if((*pte & PTE_V) == 0)
+  if((*pte & PTE_V) == 0) // 检查该va对应的pte是否有效
     return 0;
-  if((*pte & PTE_U) == 0)
+  if((*pte & PTE_U) == 0) // 检查该va对应的pte是否为属于用户空间
     return 0;
   pa = PTE2PA(*pte);  // 物理页面的起始地址
   return pa;
@@ -178,7 +178,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)  //
   for(;;){
     if((pte = walk(pagetable, a, 1)) == 0)  // 查找va对应的PTE，alloc为1允许动态分配新页表
       return -1;
-    if(*pte & PTE_V)
+    if(*pte & PTE_V)                        // 确保PTE的V位为1
       panic("mappages: remap");
     *pte = PA2PTE(pa) | perm | PTE_V;   // 在va索引到的第三级页表的PTE中写入物理地址+flag
     if(a == last)
@@ -465,12 +465,12 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
     char *p = (char *) (pa0 + (srcva - va0));
     while(n > 0){
-      if(*p == '\0'){
+      if(*p == '\0'){ // 遇到字符串结束符
         *dst = '\0';
         got_null = 1;
         break;
-      } else {
-        *dst = *p;
+      } else {        // 常规字符，直接拷贝
+        *dst = *p;    // 这里的p是用户进程srcva中对应的物理地址，而kernel正因为内核的va和pa是一一对应的，因此可以直接用*p访问物理地址
       }
       --n;
       --max;

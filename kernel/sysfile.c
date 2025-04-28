@@ -457,7 +457,7 @@ sys_exec(void)
     argv[i] = kalloc();   // 为参数分配一个物理页
     if(argv[i] == 0)
       goto bad;
-    if(fetchstr(uarg, argv[i], PGSIZE) < 0)
+    if(fetchstr(uarg, argv[i], PGSIZE) < 0) 
       goto bad;
   }
 

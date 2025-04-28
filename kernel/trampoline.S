@@ -29,15 +29,15 @@ uservec:
 
         # save user a0 in sscratch so
         # a0 can be used to get at TRAPFRAME.
-        csrw sscratch, a0
+        csrw sscratch, a0       // 把a0的内容暂存到sscratch
 
         # each process has a separate p->trapframe memory area,
         # but it's mapped to the same virtual address
         # (TRAPFRAME) in every process's user page table.
-        li a0, TRAPFRAME
+        li a0, TRAPFRAME        // 将用户进程的trapframe地址存入a0
         
         # save the user registers in TRAPFRAME
-        sd ra, 40(a0)
+        sd ra, 40(a0)   // 到此并未切换页表，仍然可以访问用户进程的地址空间
         sd sp, 48(a0)
         sd gp, 56(a0)
         sd tp, 64(a0)
@@ -79,17 +79,17 @@ uservec:
         ld tp, 32(a0)
 
         # load the address of usertrap(), from p->trapframe->kernel_trap
-        ld t0, 16(a0)
+        ld t0, 16(a0)   // 将usertrap函数的地址存入t0
 
         # fetch the kernel page table address, from p->trapframe->kernel_satp.
-        ld t1, 0(a0)
+        ld t1, 0(a0)    // 将内核页表的地址存入t1
 
         # wait for any previous memory operations to complete, so that
         # they use the user page table.
         sfence.vma zero, zero
 
         # install the kernel page table.
-        csrw satp, t1
+        csrw satp, t1    # 注意！！！！，此后切换为内核页表
 
         # flush now-stale user entries from the TLB.
         sfence.vma zero, zero
@@ -106,7 +106,7 @@ userret:
 
         # switch to the user page table.
         sfence.vma zero, zero
-        csrw satp, a0
+        csrw satp, a0   // a0中存放的是用户进程的页表
         sfence.vma zero, zero
 
         li a0, TRAPFRAME

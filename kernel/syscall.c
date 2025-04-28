@@ -22,10 +22,10 @@ fetchaddr(uint64 addr, uint64 *ip)
 // Fetch the nul-terminated string at addr from the current process.
 // Returns length of string, not including nul, or -1 for error.
 int
-fetchstr(uint64 addr, char *buf, int max)
+fetchstr(uint64 addr, char *buf, int max) // 内核和用户进程使用的是不同的页表，因此内核难以直接访问用户的数据
 {
   struct proc *p = myproc();
-  if(copyinstr(p->pagetable, buf, addr, max) < 0)
+  if(copyinstr(p->pagetable, buf, addr, max) < 0) // 这里传入用户页表，通过walkaddr来访问用户进程地址空间中的内容
     return -1;
   return strlen(buf);
 }
