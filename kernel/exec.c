@@ -46,20 +46,20 @@ exec(char *path, char **argv)
   if(elf.magic != ELF_MAGIC)
     goto bad;
 
-  if((pagetable = proc_pagetable(p)) == 0)
+  if((pagetable = proc_pagetable(p)) == 0)  // 分配新页表，一页
     goto bad;
 
   // Load program into memory.
-  for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
+  for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){   // 为每个ELF-segment分配页面
     if(readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
       goto bad;
     if(ph.type != ELF_PROG_LOAD)
       continue;
-    if(ph.memsz < ph.filesz)
+    if(ph.memsz < ph.filesz)  // filesz表示ELF文件中段的大小，memsz表示为该段分配的内存大小
       goto bad;
-    if(ph.vaddr + ph.memsz < ph.vaddr)
+    if(ph.vaddr + ph.memsz < ph.vaddr)  
       goto bad;
-    if(ph.vaddr % PGSIZE != 0)
+    if(ph.vaddr % PGSIZE != 0) 
       goto bad;
     uint64 sz1;
     if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
@@ -80,12 +80,12 @@ exec(char *path, char **argv)
   // Use the rest as the user stack.
   sz = PGROUNDUP(sz);
   uint64 sz1;
-  if((sz1 = uvmalloc(pagetable, sz, sz + (USERSTACK+1)*PGSIZE, PTE_W)) == 0)
+  if((sz1 = uvmalloc(pagetable, sz, sz + (USERSTACK+1)*PGSIZE, PTE_W)) == 0)  // 加1是为了空出一个页面作为guard page
     goto bad;
   sz = sz1;
-  uvmclear(pagetable, sz-(USERSTACK+1)*PGSIZE);
+  uvmclear(pagetable, sz-(USERSTACK+1)*PGSIZE); // 将guard page的PTE中的U位置0，使用户程序无法访问
   sp = sz;
-  stackbase = sp - USERSTACK*PGSIZE;
+  stackbase = sp - USERSTACK*PGSIZE;  
 
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
@@ -95,9 +95,9 @@ exec(char *path, char **argv)
     sp -= sp % 16; // riscv sp must be 16-byte aligned
     if(sp < stackbase)
       goto bad;
-    if(copyout(pagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
+    if(copyout(pagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0)  // 将参数从kernel写到用户栈中
       goto bad;
-    ustack[argc] = sp;
+    ustack[argc] = sp;  // argv参数的地址
   }
   ustack[argc] = 0;
 
@@ -106,7 +106,7 @@ exec(char *path, char **argv)
   sp -= sp % 16;
   if(sp < stackbase)
     goto bad;
-  if(copyout(pagetable, sp, (char *)ustack, (argc+1)*sizeof(uint64)) < 0)
+  if(copyout(pagetable, sp, (char *)ustack, (argc+1)*sizeof(uint64)) < 0) // 将参数的地址写到用户栈
     goto bad;
 
   // arguments to user main(argc, argv)

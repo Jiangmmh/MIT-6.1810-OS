@@ -35,11 +35,11 @@ proc_mapstacks(pagetable_t kpgtbl)
   struct proc *p;
   
   for(p = proc; p < &proc[NPROC]; p++) {
-    char *pa = kalloc();
+    char *pa = kalloc();  //  为每个cpu分配一页作为用户栈
     if(pa == 0)
       panic("kalloc");
-    uint64 va = KSTACK((int) (p - proc));
-    kvmmap(kpgtbl, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+    uint64 va = KSTACK((int) (p - proc)); // 向低地址移动2个页面，其中一个作为栈，另一个作为守护页面
+    kvmmap(kpgtbl, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);  // 为内核栈建立映射
   }
 }
 

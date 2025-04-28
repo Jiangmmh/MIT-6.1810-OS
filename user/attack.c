@@ -10,8 +10,8 @@ main(int argc, char *argv[])
   // (e.g., write(2, secret, 8)
   char *end = sbrk(PGSIZE*32);    // 申请32个页
   end = end + 16 * PGSIZE;
-  end += 32;
-  write(1, end, 20);
+  end += 7;
+  write(1, end, 8);
   write(1, "\n", 1);
   write(2, end, 8);
   

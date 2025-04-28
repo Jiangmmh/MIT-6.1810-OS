@@ -5,6 +5,7 @@ Finishing Time:
 - Lecture 1: Course intro, Explained some syscalls in xv6(including open, read, write, fork, exec) --2025/4/25
 - Lecture 2：C in xv6, including array, memory management, pointer ...  --2025/4/26
 - Lecture 3: OS abstract thr HW resources, strong isolation between OS & APP supported by HW, user mode/kernel mode, trust computing base(kernel must have no bug & kernel must treat process as malicious), dig into xv6 source code --2025/4/26
+- Lecture 4: Pagging, virtual memory and physical memory, RiscV HW support. --2025/4/28
 
 - Lab1 utils(6 hours): setup lab environment, install some tools, implement user programs using lib functions --2025/4/26
 - Lab2 syscall(7 hours): debug with gdb, implement a syscall trace, write a program attack kernel --2025/4/27

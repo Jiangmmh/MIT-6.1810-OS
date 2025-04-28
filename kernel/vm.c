@@ -23,7 +23,7 @@ kvmmake(void)
 {
   pagetable_t kpgtbl;
 
-  kpgtbl = (pagetable_t) kalloc();
+  kpgtbl = (pagetable_t) kalloc();  // 分配一页作为顶级目录表
   memset(kpgtbl, 0, PGSIZE);
 
   // uart registers
@@ -41,18 +41,20 @@ kvmmake(void)
 #endif  
 
   // PLIC
-  kvmmap(kpgtbl, PLIC, PLIC, 0x4000000, PTE_R | PTE_W);
+  kvmmap(kpgtbl, PLIC, PLIC, 0x4000000, PTE_R | PTE_W); // 读写
 
   // map kernel text executable and read-only.
-  kvmmap(kpgtbl, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X);
+  kvmmap(kpgtbl, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X);  // kernel的代码区
 
   // map kernel data and the physical RAM we'll make use of.
-  kvmmap(kpgtbl, (uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W);
+  kvmmap(kpgtbl, (uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W); // kernel的数据区
 
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
-  kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
-
+  // trappoline用于用户态和内核态之间的切换
+  // 由用户和内核共享，固定在最高虚拟地址0x3FFFFFF000处
+  kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);  
+                                                                          
   // allocate and map a kernel stack for each process.
   proc_mapstacks(kpgtbl);
   
@@ -74,7 +76,7 @@ kvminithart()
   // wait for any previous writes to the page table memory to finish.
   sfence_vma();
 
-  w_satp(MAKE_SATP(kernel_pagetable));
+  w_satp(MAKE_SATP(kernel_pagetable));  // 将顶级页目录表写入satp寄存器中
 
   // flush stale entries from the TLB.
   sfence_vma();
@@ -100,7 +102,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
 
   for(int level = 2; level > 0; level--) {
     pte_t *pte = &pagetable[PX(level, va)];
-    if(*pte & PTE_V) {
+    if(*pte & PTE_V) {  // 检查PTE的Valid位，表示pte存在
       pagetable = (pagetable_t)PTE2PA(*pte);
 #ifdef LAB_PGTBL
       if(PTE_LEAF(*pte)) {
@@ -108,13 +110,13 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
       }
 #endif
     } else {
-      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
+      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0) // alloc为1时为页表分配物理页
         return 0;
       memset(pagetable, 0, PGSIZE);
       *pte = PA2PTE(pagetable) | PTE_V;
     }
   }
-  return &pagetable[PX(0, va)];
+  return &pagetable[PX(0, va)]; // 返回va对应的第三级页表中的PTE
 }
 
 // Look up a virtual address, return the physical address,
@@ -136,7 +138,7 @@ walkaddr(pagetable_t pagetable, uint64 va)
     return 0;
   if((*pte & PTE_U) == 0)
     return 0;
-  pa = PTE2PA(*pte);
+  pa = PTE2PA(*pte);  // 物理页面的起始地址
   return pa;
 }
 
@@ -157,7 +159,7 @@ kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
 // Returns 0 on success, -1 if walk() couldn't
 // allocate a needed page-table page.
 int
-mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
+mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)  // 在页表中写入va与pa之间size个页的映射
 {
   uint64 a, last;
   pte_t *pte;
@@ -174,11 +176,11 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
   a = va;
   last = va + size - PGSIZE;
   for(;;){
-    if((pte = walk(pagetable, a, 1)) == 0)
+    if((pte = walk(pagetable, a, 1)) == 0)  // 查找va对应的PTE，alloc为1允许动态分配新页表
       return -1;
     if(*pte & PTE_V)
       panic("mappages: remap");
-    *pte = PA2PTE(pa) | perm | PTE_V;
+    *pte = PA2PTE(pa) | perm | PTE_V;   // 在va索引到的第三级页表的PTE中写入物理地址+flag
     if(a == last)
       break;
     a += PGSIZE;
@@ -427,17 +429,17 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
   
   while(len > 0){
     va0 = PGROUNDDOWN(srcva);   // roud到进程所在页的起始地址
-    pa0 = walkaddr(pagetable, va0); // 通过页表将虚拟地址转换为物理地址
+    pa0 = walkaddr(pagetable, va0); // 通过页表将虚拟地址转换为物理页面的起始地址
     if(pa0 == 0)
       return -1;
-    n = PGSIZE - (srcva - va0); 
+    n = PGSIZE - (srcva - va0);   // 该页剩余的字节数
     if(n > len)
       n = len;
     memmove(dst, (void *)(pa0 + (srcva - va0)), n);
 
     len -= n;
     dst += n;
-    srcva = va0 + PGSIZE;
+    srcva = va0 + PGSIZE;   // 继续从下一页写
   }
   return 0;
 }

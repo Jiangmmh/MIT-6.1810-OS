@@ -14,7 +14,7 @@ main(int argc, char *argv[])
   char *end = sbrk(PGSIZE*32);    // 申请32个页
   end = end + 9 * PGSIZE;         
   strcpy(end, "my very very very secret pw is:   "); 
-  strcpy(end+32, argv[1]);
+  strcpy(end+7, argv[1]);
   exit(0);
 }
 

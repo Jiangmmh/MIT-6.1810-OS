@@ -27,7 +27,7 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)PHYSTOP);
+  freerange(end, (void*)PHYSTOP);   // end是内核代码的末尾，让kmem管理内核剩余全部页面
 }
 
 
