@@ -19,7 +19,7 @@ extern char trampoline[]; // trampoline.S
 
 // Make a direct-map page table for the kernel.
 pagetable_t
-kvmmake(void)
+kvmmake(void)   // 内核页表的构造，系统启动时调用
 {
   pagetable_t kpgtbl;
 
@@ -63,7 +63,7 @@ kvmmake(void)
 
 // Initialize the one kernel_pagetable
 void
-kvminit(void)
+kvminit(void) // 调用kvmmake初始化内核页表
 {
   kernel_pagetable = kvmmake();
 }
@@ -71,7 +71,7 @@ kvminit(void)
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
 void
-kvminithart()
+kvminithart() // 启动分页机制
 {
   // wait for any previous writes to the page table memory to finish.
   sfence_vma();
@@ -95,7 +95,7 @@ kvminithart()
 //   12..20 -- 9 bits of level-0 index.
 //    0..11 -- 12 bits of byte offset within the page.
 pte_t *
-walk(pagetable_t pagetable, uint64 va, int alloc)
+walk(pagetable_t pagetable, uint64 va, int alloc) // 查询va对应的第三级页表的页表项
 {
   if(va >= MAXVA)
     panic("walk");
@@ -123,7 +123,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
 // or 0 if not mapped.
 // Can only be used to look up user pages.
 uint64
-walkaddr(pagetable_t pagetable, uint64 va)
+walkaddr(pagetable_t pagetable, uint64 va)  // 查看va对应物理页面地址
 {
   pte_t *pte;
   uint64 pa;
@@ -429,13 +429,13 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
   
   while(len > 0){
     va0 = PGROUNDDOWN(srcva);   // roud到进程所在页的起始地址
-    pa0 = walkaddr(pagetable, va0); // 通过页表将虚拟地址转换为物理页面的起始地址
+    pa0 = walkaddr(pagetable, va0); // 通过页表将虚拟地址转换为物理地址
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (srcva - va0);   // 该页剩余的字节数
     if(n > len)
       n = len;
-    memmove(dst, (void *)(pa0 + (srcva - va0)), n);
+    memmove(dst, (void *)(pa0 + (srcva - va0)), n); // 当前已经在内核态，使用内核页表，但是内核页表使用的直接映射，因此可以获取用户的数据
 
     len -= n;
     dst += n;
