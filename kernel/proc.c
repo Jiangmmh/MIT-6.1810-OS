@@ -158,8 +158,10 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+  
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
+
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -202,6 +204,23 @@ proc_pagetable(struct proc *p)
     return 0;
   }
 
+  // 分配一个页面保存pid，供用户进程访问，避免内核态/用户态切换
+  #ifdef LAB_PGTBL
+  struct usyscall* usyspa;
+  if((usyspa = (struct usyscall*)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+
+  usyspa->pid = p->pid;
+  if(mappages(pagetable, USYSCALL, PGSIZE, (uint64)usyspa, PTE_R | PTE_U) < 0){
+    uvmunmap(pagetable, USYSCALL, 1, 0);
+    uvmfree(pagetable, 0);
+    return 0;
+  }
+  #endif
+
   return pagetable;
 }
 
@@ -210,6 +229,12 @@ proc_pagetable(struct proc *p)
 void
 proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
+  // 释放之前分配的用于存储pid的页面
+  #ifdef LAB_PGTBL
+  if (pagetable) {
+    uvmunmap(pagetable, USYSCALL, 1, 1);
+  }
+  #endif
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmfree(pagetable, sz);
@@ -263,13 +288,13 @@ growproc(int n)
   struct proc *p = myproc();
 
   sz = p->sz;
-  if(n > 0){
+  if(n > 0){     // 分配普通页4K
     if((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
       return -1;
     }
-  } else if(n < 0){
+  } else if(n < 0){     // 回收普通页
     sz = uvmdealloc(p->pagetable, sz, sz + n);
-  }
+  } 
   p->sz = sz;
   return 0;
 }
@@ -287,7 +312,7 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
-
+  
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
