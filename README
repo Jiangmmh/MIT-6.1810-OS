@@ -7,9 +7,11 @@ Finishing Time:
 - Lecture 3: OS abstract thr HW resources, strong isolation between OS & APP supported by HW, user mode/kernel mode, trust computing base(kernel must have no bug & kernel must treat process as malicious), dig into xv6 source code --2025/4/26
 - Lecture 4: Pagging, virtual memory and physical memory, RiscV HW support --2025/4/28
 - Lecture 5: Trap(interrupt, exception, syscall), Use of Trapoline, How a syscall really work in xv6 --2025/4/28
+- Lecture 6: use of GDB, xv6 calling convention 
 
 - Lab1 utils(6 hours): setup lab environment, install some tools, implement user programs using lib functions --2025/4/26
 - Lab2 syscall(7 hours): debug with gdb, implement a syscall trace, write a program attack kernel --2025/4/27
+- lab3 pagetable(16 hours): inspect user-process pagetable, share page btwn kernel and uprocess, superpages --2025/4/30
 
 Debug tips:
 - first terminal: make GPUS=1 qemu-gdb // 令调试时线程数为1
