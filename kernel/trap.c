@@ -16,6 +16,12 @@ void kernelvec();
 
 extern int devintr();
 
+void alrmstore() 
+{
+  struct proc* p = myproc();
+  memmove(&(p->alrmtrapframe), p->trapframe, sizeof(*p->trapframe));
+}
+
 void
 trapinit(void)
 {
@@ -46,7 +52,7 @@ usertrap(void)
   w_stvec((uint64)kernelvec);
 
   struct proc *p = myproc();
-  
+
   // save user program counter.
   p->trapframe->epc = r_sepc();
   
@@ -76,10 +82,19 @@ usertrap(void)
   if(killed(p))
     exit(-1);
 
-  // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
+  if (which_dev == 2) {
+    if (p->alrmperiod > 0) {
+      p->alrmticks--;
+      if (p->alrmticks == 0) {
+        p->alrmticks = p->alrmperiod;
+        p->alrmperiod = 0;
+        alrmstore();     // save context for restore   
+        p->trapframe->epc = (uint64)p->alrmhandler;
+      }
+    }
     yield();
-
+  }
+  
   usertrapret();
 }
 
