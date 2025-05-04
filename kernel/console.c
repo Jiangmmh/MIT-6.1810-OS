@@ -64,7 +64,7 @@ consolewrite(int user_src, uint64 src, int n)
     char c;
     if(either_copyin(&c, user_src, src+i, 1) == -1)
       break;
-    uartputc(c);
+    uartputc(c);  // 每次输出一个字符
   }
 
   return i;
@@ -133,7 +133,7 @@ consoleread(int user_dst, uint64 dst, int n)
 // wake up consoleread() if a whole line has arrived.
 //
 void
-consoleintr(int c)
+consoleintr(int c)    // 累计输入字符到cons.buf，直到新一行的到来
 {
   acquire(&cons.lock);
 
@@ -165,10 +165,11 @@ consoleintr(int c)
       // store for consumption by consoleread().
       cons.buf[cons.e++ % INPUT_BUF_SIZE] = c;
 
+      // 新的一行到来或EOF，换新等待输入的进程
       if(c == '\n' || c == C('D') || cons.e-cons.r == INPUT_BUF_SIZE){
         // wake up consoleread() if a whole line (or end-of-file)
         // has arrived.
-        cons.w = cons.e;
+        cons.w = cons.e;  
         wakeup(&cons.r);
       }
     }

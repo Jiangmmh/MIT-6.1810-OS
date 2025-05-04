@@ -201,13 +201,13 @@ devintr()
 {
   uint64 scause = r_scause();
 
-  if(scause == 0x8000000000000009L){
+  if(scause == 0x8000000000000009L){ // 根据scause判断中断是否来自外部设备
     // this is a supervisor external interrupt, via PLIC.
 
     // irq indicates which device interrupted.
-    int irq = plic_claim();
+    int irq = plic_claim(); // 询问那种设备产生了中断
 
-    if(irq == UART0_IRQ){
+    if(irq == UART0_IRQ){   // 如果是UART
       uartintr();
     } else if(irq == VIRTIO0_IRQ){
       virtio_disk_intr();

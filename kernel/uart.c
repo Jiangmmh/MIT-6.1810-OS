@@ -92,7 +92,7 @@ uartputc(int c)
     for(;;)
       ;
   }
-  while(uart_tx_w == uart_tx_r + UART_TX_BUF_SIZE){
+  while(uart_tx_w == uart_tx_r + UART_TX_BUF_SIZE){ // 若buffer已满，休眠
     // buffer is full.
     // wait for uartstart() to open up space in the buffer.
     sleep(&uart_tx_r, &uart_tx_lock);
@@ -153,7 +153,7 @@ uartstart()
     // maybe uartputc() is waiting for space in the buffer.
     wakeup(&uart_tx_r);
     
-    WriteReg(THR, c);
+    WriteReg(THR, c); // 将字符写往设备
   }
 }
 
