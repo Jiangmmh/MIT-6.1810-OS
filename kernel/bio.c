@@ -25,7 +25,7 @@
 
 struct {
   struct spinlock lock;
-  struct buf buf[NBUF];
+  struct buf buf[NBUF]; 
 
   // Linked list of all buffers, through prev/next.
   // Sorted by how recently the buffer was used.

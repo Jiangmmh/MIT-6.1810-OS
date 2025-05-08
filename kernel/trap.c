@@ -29,6 +29,35 @@ trapinithart(void)
   w_stvec((uint64)kernelvec);
 }
 
+int 
+cowfault(pagetable_t pagetable, uint64 va) 
+{
+  if (va >= MAXVA)
+    return -1;
+
+  // walk中会检查pte中的PTE_V位，如果不在页表会返回0
+  pte_t *pte = walk(pagetable, va, 0);
+  if (pte == 0  || (*pte & PTE_COW) == 0) // 如果不是COW页面则必须kill掉
+    return -1;
+  
+  // 如Trapoline和Trapframe都是没有U权限的，不能访问
+  if ((*pte & PTE_U) == 0 || (*pte & PTE_V) == 0)
+    return -1;
+  
+  uint64 pa_old = PTE2PA(*pte);
+  uint64 pa_new = (uint64)kalloc();
+
+  if (pa_new == 0) {
+    printf("cow kalloc failed\n");
+    return -1;
+  }
+
+  memmove((void*)pa_new, (const void*)pa_old, PGSIZE);
+  *pte = (PA2PTE(pa_new) | PTE_FLAGS(*pte) | PTE_W) & (~PTE_COW);
+  kfree((void*)pa_old);
+  return 0;
+}
+
 //
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
@@ -65,8 +94,11 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if((which_dev = devintr()) != 0){
+  }  else if((which_dev = devintr()) != 0){
     // ok
+  } else if (r_scause() == 0xf) {
+    if (cowfault(p->pagetable, r_stval()) < 0)
+      setkilled(p);
   } else {
     printf("usertrap(): unexpected scause 0x%lx pid=%d\n", r_scause(), p->pid);
     printf("            sepc=0x%lx stval=0x%lx\n", r_sepc(), r_stval());
