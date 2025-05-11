@@ -8,12 +8,12 @@
 #include "e1000_dev.h"
 
 #define TX_RING_SIZE 16
-static struct tx_desc tx_ring[TX_RING_SIZE] __attribute__((aligned(16)));
-static char *tx_bufs[TX_RING_SIZE];
+static struct tx_desc tx_ring[TX_RING_SIZE] __attribute__((aligned(16))); // 保存发送的描述信息
+static char *tx_bufs[TX_RING_SIZE]; // 待发送的数据
 
 #define RX_RING_SIZE 16
-static struct rx_desc rx_ring[RX_RING_SIZE] __attribute__((aligned(16)));
-static char *rx_bufs[RX_RING_SIZE];
+static struct rx_desc rx_ring[RX_RING_SIZE] __attribute__((aligned(16))); // 保存接收的描述信息
+static char *rx_bufs[RX_RING_SIZE]; // 待接收的数据
 
 // remember where the e1000's registers live.
 static volatile uint32 *regs;
@@ -94,28 +94,42 @@ e1000_init(uint32 *xregs)
 int
 e1000_transmit(char *buf, int len)
 {
-  //
-  // Your code here.
-  //
-  // buf contains an ethernet frame; program it into
-  // the TX descriptor ring so that the e1000 sends it. Stash
-  // a pointer so that it can be freed after send completes.
-  //
+  acquire(&e1000_lock);
+  uint32 idx = regs[E1000_TDT];
 
-  
+  if ((tx_ring[idx].status & E1000_TXD_STAT_DD) == 0) {
+    release(&e1000_lock);
+    return -1;
+  }
+
+  if (tx_bufs[idx]) {
+    kfree(tx_bufs[idx]);
+  }
+
+  tx_bufs[idx] = buf;
+  tx_ring[idx].addr = (uint64)buf;
+  tx_ring[idx].length = len;
+  tx_ring[idx].cmd = E1000_TXD_CMD_RS | E1000_TXD_CMD_EOP;
+
+  regs[E1000_TDT] = (idx + 1) % TX_RING_SIZE;
+  release(&e1000_lock);
   return 0;
 }
 
 static void
 e1000_recv(void)
 {
-  //
-  // Your code here.
-  //
-  // Check for packets that have arrived from the e1000
-  // Create and deliver a buf for each packet (using net_rx()).
-  //
-
+  uint32 idx = (regs[E1000_RDT] + 1) % RX_RING_SIZE;
+  while (rx_ring[idx].status & E1000_RXD_STAT_DD) {
+    net_rx(rx_bufs[idx], rx_ring[idx].length);
+    if ((rx_bufs[idx] = kalloc()) == 0) {
+      panic("e1000_recv");
+    }
+    rx_ring[idx].addr = (uint64)rx_bufs[idx];
+    rx_ring[idx].status = 0;
+    idx = (idx + 1) % RX_RING_SIZE;
+  }
+  regs[E1000_RDT] = (idx + RX_RING_SIZE - 1) % RX_RING_SIZE;
 }
 
 void
