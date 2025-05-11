@@ -24,7 +24,7 @@
 #include "buf.h"
 
 struct {
-  struct spinlock lock;
+  struct spinlock lock; // spinlock保护bcache
   struct buf buf[NBUF]; 
 
   // Linked list of all buffers, through prev/next.
@@ -43,10 +43,10 @@ binit(void)
   // Create linked list of buffers
   bcache.head.prev = &bcache.head;
   bcache.head.next = &bcache.head;
-  for(b = bcache.buf; b < bcache.buf+NBUF; b++){
+  for(b = bcache.buf; b < bcache.buf+NBUF; b++){  // 将buf数组链接到head上
     b->next = bcache.head.next;
     b->prev = &bcache.head;
-    initsleeplock(&b->lock, "buffer");
+    initsleeplock(&b->lock, "buffer");  // sleeplock保护buffer
     bcache.head.next->prev = b;
     bcache.head.next = b;
   }
@@ -60,32 +60,32 @@ bget(uint dev, uint blockno)
 {
   struct buf *b;
 
-  acquire(&bcache.lock);
+  acquire(&bcache.lock);  // 锁bcache找设备和块对应的buf
 
   // Is the block already cached?
-  for(b = bcache.head.next; b != &bcache.head; b = b->next){
+  for(b = bcache.head.next; b != &bcache.head; b = b->next){  // 从前往后找，先找最近使用过的
     if(b->dev == dev && b->blockno == blockno){
       b->refcnt++;
-      release(&bcache.lock);
-      acquiresleep(&b->lock);
+      release(&bcache.lock);  // 找到buf，释放bcache
+      acquiresleep(&b->lock); // 获取buf的锁
       return b;
     }
   }
 
   // Not cached.
   // Recycle the least recently used (LRU) unused buffer.
-  for(b = bcache.head.prev; b != &bcache.head; b = b->prev){
-    if(b->refcnt == 0) {
+  for(b = bcache.head.prev; b != &bcache.head; b = b->prev){ // 从后往前找，找最近未使用过的空闲缓冲区
+    if(b->refcnt == 0) {  // 找未被使用的缓冲区
       b->dev = dev;
       b->blockno = blockno;
-      b->valid = 0;
+      b->valid = 0;   // 要读取的内容不在buf中
       b->refcnt = 1;
       release(&bcache.lock);
       acquiresleep(&b->lock);
       return b;
     }
   }
-  panic("bget: no buffers");
+  panic("bget: no buffers");  // 如果没有多余的buf，直接panic
 }
 
 // Return a locked buf with the contents of the indicated block.
@@ -96,7 +96,7 @@ bread(uint dev, uint blockno)
 
   b = bget(dev, blockno);
   if(!b->valid) {
-    virtio_disk_rw(b, 0);
+    virtio_disk_rw(b, 0); // 从磁盘读进buf
     b->valid = 1;
   }
   return b;
@@ -125,9 +125,9 @@ brelse(struct buf *b)
   b->refcnt--;
   if (b->refcnt == 0) {
     // no one is waiting for it.
-    b->next->prev = b->prev;
+    b->next->prev = b->prev;      // 把自己摘出来
     b->prev->next = b->next;
-    b->next = bcache.head.next;
+    b->next = bcache.head.next;   // 头插法查到head中
     b->prev = &bcache.head;
     bcache.head.next->prev = b;
     bcache.head.next = b;
