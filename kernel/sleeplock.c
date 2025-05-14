@@ -51,5 +51,3 @@ holdingsleep(struct sleeplock *lk)
   return r;
 }
 
-
-

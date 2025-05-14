@@ -34,7 +34,7 @@
 // and to keep track in memory of logged block# before commit.
 struct logheader {
   int n;
-  int block[LOGSIZE];
+  int block[LOGSIZE]; // 记录log块对应的数据块号
 };
 
 struct log {
@@ -89,7 +89,7 @@ read_head(void)
   struct buf *buf = bread(log.dev, log.start);
   struct logheader *lh = (struct logheader *) (buf->data);
   int i;
-  log.lh.n = lh->n;
+  log.lh.n = lh->n; 
   for (i = 0; i < log.lh.n; i++) {
     log.lh.block[i] = lh->block[i];
   }
@@ -152,7 +152,7 @@ end_op(void)
   log.outstanding -= 1;
   if(log.committing)
     panic("log.committing");
-  if(log.outstanding == 0){
+  if(log.outstanding == 0){ 
     do_commit = 1;
     log.committing = 1;
   } else {
@@ -163,7 +163,7 @@ end_op(void)
   }
   release(&log.lock);
 
-  if(do_commit){
+  if(do_commit){  // 如果所有事务结束，就提交，否则啥也不干
     // call commit w/o holding locks, since not allowed
     // to sleep with locks.
     commit();
@@ -197,7 +197,7 @@ commit()
     write_log();     // Write modified blocks from cache to log
     write_head();    // Write header to disk -- the real commit
     install_trans(0); // Now install writes to home locations
-    log.lh.n = 0;
+    log.lh.n = 0;     // 这里将n置为0，恢复时如果发现n为0则不需要恢复
     write_head();    // Erase the transaction from the log
   }
 }
@@ -228,9 +228,8 @@ log_write(struct buf *b)
   }
   log.lh.block[i] = b->blockno;
   if (i == log.lh.n) {  // Add new block to log?
-    bpin(b);
+    bpin(b);    // 并不真正地写入，而是通过bpin增加引用计数，避免该buf被释放
     log.lh.n++;
   }
   release(&log.lock);
 }
-
