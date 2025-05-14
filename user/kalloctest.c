@@ -47,7 +47,7 @@ void test1(void)
   void *a, *a1;
   int n, m;
 
-  printf("start test1\n");  
+  printf("start test1\n");
   m = ntas(0);
   for(int i = 0; i < NCHILD; i++){
     int pid = fork();
@@ -57,9 +57,9 @@ void test1(void)
     }
     if(pid == 0){
       for(i = 0; i < N; i++) {
-        a = sbrk(4096);
+        a = sbrk(4096);   // 申请内存
         *(int *)(a+4) = 1;
-        a1 = sbrk(-4096);
+        a1 = sbrk(-4096); // 释放内存
         if (a1 != a + 4096) {
           printf("test1: FAIL wrong sbrk\n");
           exit(1);
