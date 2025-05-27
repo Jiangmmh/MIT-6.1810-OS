@@ -1,8 +1,14 @@
 Projects of MIT6.1810 Oerating System Engineering
+- utils：环境配置 + 利用系统调用实现一些应用程序
+- syscall：实现trace系统调用、分析fork调用中资源分配过程
+- pgtbl：通过共享页面加速系统调用、打印页表、在RISCV上实现超级页
+- trap：实现backtrace、实现Alarm系统调用，每隔若干个ticks就调用一次用户函数
+- cow：实现Copy-On-Write fork
+- net：为E1000网卡写一个简单的驱动程序、实现UDP消息的收发
+- lock：细化物理内存分配和磁盘缓存中锁的粒度，提高并发性
+
 Starting Time: 2025/4/25
 Finishing Time: 2025/5/25
-- user
-
 
 Debug tips:
 - first terminal: make GPUS=1 qemu-gdb // 令调试时线程数为1
