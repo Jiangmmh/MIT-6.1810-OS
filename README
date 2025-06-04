@@ -7,9 +7,8 @@ Projects of MIT6.1810 Oerating System Engineering
 - net：为E1000网卡写一个简单的驱动程序、实现UDP消息的收发
 - lock：细化物理内存分配和磁盘缓存中锁的粒度，提高并发性
 
-Starting Time: 2025/4/25
-Finishing Time: 2025/5/25
 
+-----------------------------------------------------------------------
 Debug tips:
 - first terminal: make GPUS=1 qemu-gdb // 令调试时线程数为1
 - second terminal: gdb-multiarch
