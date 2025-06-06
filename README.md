@@ -1,32 +1,67 @@
 # MIT 6.1810学习笔记
 
-MIT的操作系统课程，授课教师是Moris和Franc两个大佬，我学习的是24 fall的内容，其他年份的内容都差不多，之前看了OSTEP和《x86汇编：从实模式到保护模式》，对操作系统有一点基础，因此打算30天之内解决战斗。
+MIT的操作系统课程，授课教师是Moris和Franc两个大牛，我学习的是24 fall的内容，其他年份的内容都差不多，之前看了OSTEP和《x86汇编：从实模式到保护模式》，对操作系统有一点基础，因此打算30天之内解决战斗。
 
-代码仓库：https://github.com/Jiangmmh/MIT-6.1810-OS/tree/main
+目录：
+- [MIT 6.1810学习笔记](#mit-61810学习笔记)
+  - [结语](#结语)
+  - [一点xv6的梳理](#一点xv6的梳理)
+    - [StartUp](#startup)
+    - [Spinlock](#spinlock)
+    - [SleepLock](#sleeplock)
+    - [Mem Management](#mem-management)
+    - [System Call](#system-call)
+    - [RISCV](#riscv)
+    - [Filesystem](#filesystem)
+  - [Lecutres](#lecutres)
+    - [Lecutre8 page fault](#lecutre8-page-fault)
+    - [Lecture9 interrupt](#lecture9-interrupt)
+    - [Lecture10 lock](#lecture10-lock)
+    - [Lecture11 thread](#lecture11-thread)
+    - [Lecture12 Q\&A for COW](#lecture12-qa-for-cow)
+    - [Lecture13 Coordination](#lecture13-coordination)
+    - [Lecture14 FileSystem](#lecture14-filesystem)
+    - [Lecture15 Crash Recovery](#lecture15-crash-recovery)
+    - [Lecture16 FS Performance and Fast CR](#lecture16-fs-performance-and-fast-cr)
+  - [Lab1 utils](#lab1-utils)
+    - [Boot xv6](#boot-xv6)
+    - [sleep](#sleep)
+    - [pingpong](#pingpong)
+    - [primes](#primes)
+    - [find](#find)
+    - [xargs](#xargs)
+    - [总结](#总结)
+  - [Lab2 system calls](#lab2-system-calls)
+    - [Using gdb](#using-gdb)
+    - [System call tracing](#system-call-tracing)
+    - [Attack xv6](#attack-xv6)
+    - [总结](#总结-1)
+  - [Lab3 page tables](#lab3-page-tables)
+    - [Inspect a user-process page table](#inspect-a-user-process-page-table)
+    - [Speed up system calls](#speed-up-system-calls)
+    - [Print a page table](#print-a-page-table)
+    - [Use superpages](#use-superpages)
+    - [总结](#总结-2)
+  - [Lab4 trap](#lab4-trap)
+    - [RISC-V assembly](#risc-v-assembly)
+    - [Backtrace](#backtrace)
+    - [Alarm](#alarm)
+    - [总结](#总结-3)
+  - [Lab5 cow](#lab5-cow)
+    - [COW](#cow)
+    - [总结](#总结-4)
+  - [Lab6 Net](#lab6-net)
+    - [NIC](#nic)
+    - [总结](#总结-5)
+  - [Lab7 lock](#lab7-lock)
+    - [Memory allocator](#memory-allocator)
+    - [Buffer cache](#buffer-cache)
+    - [总结](#总结-6)
 
-Lecture视频（20fall）：https://www.bilibili.com/video/BV166421f7D6?spm_id_from=333.788.videopod.sections&vd_source=082ae7da449141d5d5cd54b517c4204a&p=12
-
-Lecture翻译博客：https://www.zhihu.com/column/c_1294282919087964160
-
-非常棒的xv6源码的讲解：https://www.youtube.com/watch?v=fWUJKH0RNFE&list=PLbtzT1TYeoMhTPzyTZboW_j7TPAnjv9XB&ab_channel=hhp3
-
-我的目标：
-
-- 看完所有Lecture
-- 尽可能独立完成所有lab
 
 ## 结语
 
 尽管已经有了一定的操作系统基础，但是做这门课程的实验时仍然被折磨得很痛苦。课程一开始还挺轻松的，我跟着lecture和xv6book的介绍，并阅读源码，逐步理清了xv6的实现思路，前两个lab做得也很顺利，但是从第三个lab开始，基本上每个lab都要卡很久，倒不是因为没有思路，基本上每个lab我都能很快的有一个自己的实现计划，并编写出对应的代码，但内核是一个各部分联系紧密且难以调试的软件，大多数时候无法根据错误的结果直接定位到bug在哪里，只能不断地通过重新审视自己的代码、打印中间结果去debug。通过课程的学习和lab的实践，我对于操作系统的运行机制和实现方法有了更加深入的理解。或许我永远不需要真的在工作中编写操作系统内核，但操作系统的实现策略和机制对于很多软件系统的实现有着借鉴意义。最近太忙了，其实还剩一个文件系统的lab没做，以后有时间了再补上。
-
-我完成了的实验内容：
-- utils：环境配置 + 利用系统调用实现一些应用程序
-- syscall：实现trace系统调用、分析fork调用中资源分配过程
-- pgtbl：通过共享页面加速系统调用、打印页表、在RISCV上实现超级页
-- trap：实现backtrace、实现Alarm系统调用，每隔若干个ticks就调用一次用户函数
-- cow：实现Copy-On-Write fork
-- net：为E1000网卡写一个简单的驱动程序
-- lock：细化物理内存分配和磁盘缓存中锁的粒度，提高并发性
 
 ---
 
